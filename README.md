@@ -1,6 +1,6 @@
 # Social Media Integration API
 
-A Node.js API service that provides integration with Twitter, Telegram, and Reddit platforms, allowing agents to manage social media accounts, bots, and engage with communities.
+A Node.js API service that provides integration with Twitter, Telegram, Reddit, and Discord platforms, allowing agents to manage social media accounts, bots, and engage with communities.
 
 ## Features
 
@@ -56,6 +56,40 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
   - Trending threads
   - AMAs in subscribed subreddits
 - Mark notifications as read/unread
+
+### Discord Integration
+
+#### Authentication & Bot Management
+- OAuth 2.0 authentication with Discord
+- Bot integration with servers
+- Secure token management
+- Multiple server support
+
+#### Server Management
+- List and manage Discord servers
+- Create and configure channels
+- Role management and assignment
+- Automated role assignment based on Web3 activity
+
+#### Notifications & Events
+- Send notifications to channels
+- Schedule notifications
+- Create and manage server events
+- Support for different notification types:
+  - Transaction alerts
+  - NFT mints
+  - Governance updates
+  - Community events
+  - General announcements
+
+#### Custom Commands
+- Built-in commands for Web3 interactions:
+  - `/balance` - Check wallet balances
+  - `/nft` - Display NFT collections
+  - `/vote` - Submit DAO votes
+- Command execution logging
+- Permission management
+- Cooldown support
 
 ### API Endpoints
 
@@ -186,6 +220,75 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
    Response: Success message
    ```
 
+#### Discord APIs
+
+1. **Get Auth URL**
+   ```
+   GET /api/discord/auth
+   Response: { auth_url: "https://..." }
+   ```
+
+2. **Handle OAuth Callback**
+   ```
+   GET /api/discord/callback?code=...
+   Response: Account details
+   ```
+
+3. **List Servers**
+   ```
+   GET /api/discord/accounts/:account_id/servers
+   Response: Array of servers
+   ```
+
+4. **Create Channel**
+   ```
+   POST /api/discord/channels
+   Body: {
+     "server_id": 123,
+     "name": "channel-name",
+     "type": "text|voice|category|announcement"
+   }
+   Response: Channel details
+   ```
+
+5. **Assign Role**
+   ```
+   POST /api/discord/roles/assign
+   Body: {
+     "server_id": 123,
+     "user_id": "discord_user_id",
+     "role_name": "role-name"
+   }
+   Response: Success message
+   ```
+
+6. **Send Notification**
+   ```
+   POST /api/discord/notifications
+   Body: {
+     "channel_id": 123,
+     "content": "Message content",
+     "type": "transaction|nft_mint|governance|event|announcement",
+     "metadata": {},
+     "schedule_time": "2024-03-10T15:00:00Z"
+   }
+   Response: Notification details
+   ```
+
+7. **Create Event**
+   ```
+   POST /api/discord/events
+   Body: {
+     "server_id": 123,
+     "name": "Event name",
+     "description": "Event description",
+     "start_time": "2024-03-10T15:00:00Z",
+     "end_time": "2024-03-10T16:00:00Z",
+     "channel_id": 456
+   }
+   Response: Event details
+   ```
+
 ### Database Schema
 
 #### Telegram Tables
@@ -279,6 +382,104 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
    - read_at (TIMESTAMP)
    - created_at (TIMESTAMP)
 
+#### Discord Tables
+
+1. **discord_accounts**
+   - id (SERIAL PRIMARY KEY)
+   - agent_id (INTEGER)
+   - discord_user_id (VARCHAR)
+   - username (VARCHAR)
+   - discriminator (VARCHAR)
+   - access_token (TEXT)
+   - refresh_token (TEXT)
+   - token_expires_at (TIMESTAMP)
+   - status (active/disconnected)
+   - created_at, updated_at
+
+2. **discord_servers**
+   - id (SERIAL PRIMARY KEY)
+   - discord_server_id (VARCHAR)
+   - name (VARCHAR)
+   - description (TEXT)
+   - icon_url (TEXT)
+   - member_count (INTEGER)
+   - status (active/inactive/removed)
+   - created_at, updated_at
+   - last_synced_at (TIMESTAMP)
+
+3. **discord_channels**
+   - id (SERIAL PRIMARY KEY)
+   - server_id (FOREIGN KEY)
+   - discord_channel_id (VARCHAR)
+   - name (VARCHAR)
+   - type (text/voice/category/announcement)
+   - status (active/archived/deleted)
+   - created_at, updated_at
+
+4. **discord_roles**
+   - id (SERIAL PRIMARY KEY)
+   - server_id (FOREIGN KEY)
+   - discord_role_id (VARCHAR)
+   - name (VARCHAR)
+   - color (INTEGER)
+   - position (INTEGER)
+   - permissions (BIGINT)
+   - created_at, updated_at
+
+5. **discord_role_assignments**
+   - id (SERIAL PRIMARY KEY)
+   - role_id (FOREIGN KEY)
+   - discord_user_id (VARCHAR)
+   - assigned_by_user_id (VARCHAR)
+   - assigned_at (TIMESTAMP)
+   - removed_at (TIMESTAMP)
+   - status (active/removed)
+
+6. **discord_commands**
+   - id (SERIAL PRIMARY KEY)
+   - name (VARCHAR)
+   - description (TEXT)
+   - enabled (BOOLEAN)
+   - cooldown_seconds (INTEGER)
+   - required_permissions (TEXT[])
+   - created_at, updated_at
+
+7. **discord_command_logs**
+   - id (SERIAL PRIMARY KEY)
+   - command_id (FOREIGN KEY)
+   - discord_user_id (VARCHAR)
+   - server_id (FOREIGN KEY)
+   - channel_id (FOREIGN KEY)
+   - arguments (JSONB)
+   - response_status (VARCHAR)
+   - error_message (TEXT)
+   - execution_time_ms (INTEGER)
+   - created_at
+
+8. **discord_notifications**
+   - id (SERIAL PRIMARY KEY)
+   - channel_id (FOREIGN KEY)
+   - type (transaction/nft_mint/governance/event/announcement)
+   - content (TEXT)
+   - metadata (JSONB)
+   - scheduled_for (TIMESTAMP)
+   - sent_at (TIMESTAMP)
+   - status (pending/sent/failed/cancelled)
+   - created_at, updated_at
+
+9. **discord_events**
+   - id (SERIAL PRIMARY KEY)
+   - server_id (FOREIGN KEY)
+   - discord_event_id (VARCHAR)
+   - name (VARCHAR)
+   - description (TEXT)
+   - start_time (TIMESTAMP)
+   - end_time (TIMESTAMP)
+   - channel_id (FOREIGN KEY)
+   - creator_id (VARCHAR)
+   - status (scheduled/active/completed/cancelled)
+   - created_at, updated_at
+
 ## Setup
 
 1. Install dependencies:
@@ -303,6 +504,13 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
    REDDIT_CLIENT_SECRET=your_reddit_client_secret
    REDDIT_CALLBACK_URL=http://localhost:3000/api/reddit/callback
    REDDIT_USER_AGENT=web3_app:v1.0.0 (by /u/your_username)
+
+   # Discord Configuration
+   DISCORD_CLIENT_ID=your_discord_client_id
+   DISCORD_CLIENT_SECRET=your_discord_client_secret
+   DISCORD_BOT_TOKEN=your_discord_bot_token
+   DISCORD_CALLBACK_URL=http://localhost:3000/api/discord/callback
+   DISCORD_PERMISSIONS=8  # Administrator permissions
 
    # Server Configuration
    PORT=3000
@@ -330,6 +538,12 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
 - SQL injection protection through parameterized queries
 - OAuth 2.0 authentication for Reddit
 - Secure token management
+- OAuth 2.0 authentication for Discord
+- Bot token security
+- Role-based access control
+- Command permission management
+- Rate limiting
+- Input validation
 
 ## Error Handling
 
@@ -360,6 +574,14 @@ A Node.js API service that provides integration with Twitter, Telegram, and Redd
 14. Add support for Reddit live threads
 15. Implement advanced analytics dashboard
 16. Add support for Reddit chat
+17. Add support for Discord threads
+18. Implement reaction roles
+19. Add support for voice channels
+20. Implement message components (buttons, selects)
+21. Add support for Discord embeds
+22. Implement message queuing for broadcasts
+23. Add support for Discord webhooks
+24. Implement advanced permission management
 
 ## Contributing
 

@@ -4,6 +4,7 @@ import cors from 'cors';
 import twitterRoutes from './routes/twitter.js';
 import telegramRoutes from './routes/telegram.routes.js';
 import redditRoutes from './routes/reddit.routes.js';
+import discordRoutes from './routes/discord.routes.js';
 import { authenticateToken } from './middleware/auth.js';
 
 // Load environment variables
@@ -53,6 +54,7 @@ console.log('Mounting routes...');
 app.use('/api/twitter', twitterRoutes);
 app.use('/api', telegramRoutes);
 app.use('/api', redditRoutes);
+app.use('/api', discordRoutes);
 console.log('Routes mounted');
 
 // Health check endpoint
@@ -82,6 +84,10 @@ app.get('/health', async (req, res) => {
       reddit: {
         configured: Boolean(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET),
         callbackUrl: process.env.REDDIT_CALLBACK_URL
+      },
+      discord: {
+        configured: Boolean(process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET && process.env.DISCORD_BOT_TOKEN),
+        callbackUrl: process.env.DISCORD_CALLBACK_URL
       }
     };
 
