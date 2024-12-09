@@ -1,6 +1,6 @@
-# Twitter and Telegram Integration API
+# Social Media Integration API
 
-A Node.js API service that provides integration with Twitter and Telegram platforms, allowing agents to manage social media accounts and bots.
+A Node.js API service that provides integration with Twitter, Telegram, and Reddit platforms, allowing agents to manage social media accounts, bots, and engage with communities.
 
 ## Features
 
@@ -22,6 +22,40 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
 #### Message Logging
 - All incoming and outgoing messages are logged
 - Message status tracking (sent, delivered, failed)
+
+### Reddit Integration
+
+#### Authentication & Account Management
+- OAuth 2.0 authentication with Reddit
+- Secure token management and refresh
+- Multiple account support per agent
+
+#### Subreddit Management
+- Search and discover subreddits
+- Track subreddit metrics and engagement
+- Validate subreddit rules before posting
+
+#### Post Management
+- Create text, link, image, and video posts
+- Schedule posts for optimal timing
+- Support for multiple subreddits
+- Post validation against subreddit rules
+
+#### Analytics & Engagement
+- Track post performance metrics
+  - Upvotes and downvotes
+  - Comment counts
+  - Engagement rates
+- Historical analytics data
+- Engagement trend analysis
+
+#### Notifications
+- Real-time notifications for:
+  - Post comments
+  - Upvotes and awards
+  - Trending threads
+  - AMAs in subscribed subreddits
+- Mark notifications as read/unread
 
 ### API Endpoints
 
@@ -91,6 +125,67 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
    Response: Bot information and connection status
    ```
 
+#### Reddit APIs
+
+1. **Get Auth URL**
+   ```
+   GET /api/reddit/auth
+   Response: { auth_url: "https://..." }
+   ```
+
+2. **Handle OAuth Callback**
+   ```
+   GET /api/reddit/callback?code=...
+   Response: Account details
+   ```
+
+3. **Search Subreddits**
+   ```
+   GET /api/reddit/subreddits/search
+   Query: 
+     - query: Search term
+     - account_id: Reddit account ID
+   Response: Array of subreddits
+   ```
+
+4. **Create Post**
+   ```
+   POST /api/reddit/posts
+   Body: {
+     "account_id": 123,
+     "subreddit": "cryptocurrency",
+     "title": "Post title",
+     "content": "Post content",
+     "post_type": "text|link|image|video",
+     "url": "https://...",
+     "schedule_time": "2024-03-10T15:00:00Z"
+   }
+   Response: Post details
+   ```
+
+5. **Get Post Analytics**
+   ```
+   GET /api/reddit/posts/:post_id/analytics
+   Response: Post analytics data
+   ```
+
+6. **Get Notifications**
+   ```
+   GET /api/reddit/accounts/:account_id/notifications
+   Query:
+     - unread_only: boolean
+   Response: Array of notifications
+   ```
+
+7. **Mark Notifications as Read**
+   ```
+   POST /api/reddit/notifications/mark-read
+   Body: {
+     "notification_ids": [1, 2, 3]
+   }
+   Response: Success message
+   ```
+
 ### Database Schema
 
 #### Telegram Tables
@@ -119,6 +214,71 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
    - status (sent/delivered/failed)
    - created_at
 
+#### Reddit Tables
+
+1. **reddit_accounts**
+   - id (SERIAL PRIMARY KEY)
+   - agent_id (INTEGER)
+   - username (VARCHAR)
+   - refresh_token (TEXT)
+   - access_token (TEXT)
+   - token_expires_at (TIMESTAMP)
+   - status (active/disconnected)
+   - created_at, updated_at
+
+2. **reddit_subreddits**
+   - id (SERIAL PRIMARY KEY)
+   - name (VARCHAR)
+   - display_name (VARCHAR)
+   - description (TEXT)
+   - subscribers (INTEGER)
+   - status (active/inactive/blocked)
+   - created_at, updated_at
+   - last_synced_at (TIMESTAMP)
+
+3. **reddit_posts**
+   - id (SERIAL PRIMARY KEY)
+   - account_id (FOREIGN KEY)
+   - subreddit_id (FOREIGN KEY)
+   - reddit_post_id (VARCHAR)
+   - title (VARCHAR)
+   - content (TEXT)
+   - url (TEXT)
+   - post_type (text/link/image/video)
+   - scheduled_for (TIMESTAMP)
+   - posted_at (TIMESTAMP)
+   - status (draft/scheduled/posted/failed/deleted)
+   - created_at, updated_at
+
+4. **reddit_post_analytics**
+   - id (SERIAL PRIMARY KEY)
+   - post_id (FOREIGN KEY)
+   - upvotes (INTEGER)
+   - downvotes (INTEGER)
+   - comment_count (INTEGER)
+   - score (INTEGER)
+   - controversy_score (FLOAT)
+   - recorded_at (TIMESTAMP)
+
+5. **reddit_comments**
+   - id (SERIAL PRIMARY KEY)
+   - post_id (FOREIGN KEY)
+   - reddit_comment_id (VARCHAR)
+   - parent_comment_id (SELF REFERENCE)
+   - content (TEXT)
+   - author (VARCHAR)
+   - upvotes, downvotes (INTEGER)
+   - created_at, updated_at
+
+6. **reddit_notifications**
+   - id (SERIAL PRIMARY KEY)
+   - account_id (FOREIGN KEY)
+   - type (comment/upvote/trending/ama)
+   - content (TEXT)
+   - reference_id (TEXT)
+   - read_at (TIMESTAMP)
+   - created_at (TIMESTAMP)
+
 ## Setup
 
 1. Install dependencies:
@@ -131,12 +291,18 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
    # Database Configuration
    DB_USER=your_db_user
    DB_HOST=localhost
-   DB_NAME=twitter_integration
+   DB_NAME=social_integration
    DB_PASSWORD=your_db_password
    DB_PORT=5432
 
    # Telegram Configuration
    TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+
+   # Reddit Configuration
+   REDDIT_CLIENT_ID=your_reddit_client_id
+   REDDIT_CLIENT_SECRET=your_reddit_client_secret
+   REDDIT_CALLBACK_URL=http://localhost:3000/api/reddit/callback
+   REDDIT_USER_AGENT=web3_app:v1.0.0 (by /u/your_username)
 
    # Server Configuration
    PORT=3000
@@ -145,7 +311,7 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
 
 3. Run database migrations:
    ```bash
-   psql -U your_db_user -d twitter_integration -f schema.sql
+   psql -U your_db_user -d social_integration -f schema.sql
    ```
 
 4. Start the server:
@@ -162,6 +328,8 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
 - Admin role verification (to be implemented)
 - Rate limiting (to be implemented)
 - SQL injection protection through parameterized queries
+- OAuth 2.0 authentication for Reddit
+- Secure token management
 
 ## Error Handling
 
@@ -172,6 +340,7 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
 - Authentication errors
 - Database errors
 - Telegram API errors
+- API rate limit errors
 
 ## Future Enhancements
 
@@ -183,6 +352,14 @@ A Node.js API service that provides integration with Twitter and Telegram platfo
 6. Implement user management system
 7. Add analytics and reporting
 8. Add support for media messages
+9. Implement subreddit rule validation
+10. Add support for Reddit polls
+11. Implement comment moderation tools
+12. Add support for Reddit awards
+13. Implement content recommendation engine
+14. Add support for Reddit live threads
+15. Implement advanced analytics dashboard
+16. Add support for Reddit chat
 
 ## Contributing
 

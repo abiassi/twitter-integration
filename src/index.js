@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import twitterRoutes from './routes/twitter.js';
 import telegramRoutes from './routes/telegram.routes.js';
+import redditRoutes from './routes/reddit.routes.js';
 import { authenticateToken } from './middleware/auth.js';
 
 // Load environment variables
@@ -51,6 +52,7 @@ app.options('*', cors(corsOptions));
 console.log('Mounting routes...');
 app.use('/api/twitter', twitterRoutes);
 app.use('/api', telegramRoutes);
+app.use('/api', redditRoutes);
 console.log('Routes mounted');
 
 // Health check endpoint
@@ -76,6 +78,10 @@ app.get('/health', async (req, res) => {
       },
       telegram: {
         configured: Boolean(process.env.TELEGRAM_BOT_TOKEN)
+      },
+      reddit: {
+        configured: Boolean(process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET),
+        callbackUrl: process.env.REDDIT_CALLBACK_URL
       }
     };
 
